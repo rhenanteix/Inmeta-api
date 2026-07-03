@@ -47,4 +47,46 @@ export class EmployeeDocumentService {
 
 });
 }
+
+async unlinkDocumentType(
+    employeeId: string,
+    documentTypeId: string,
+) {
+    const employeeDocument = await this.prisma.employeeDocument.findFirst({
+        where: {
+            employeeId,
+            documentTypeId,
+            deletedAt: null,
+        },
+    });
+
+    if (!employeeDocument) {
+        throw new BadRequestException('Employee document link not found');
+    }
+
+    return this.prisma.employeeDocument.update({
+        where: {
+            id: employeeDocument.id,
+        },
+        data: {
+            deletedAt: new Date(),
+        },
+    });
+}
+
+async findEmployeeDocuments(
+    employeeId: string
+) {
+    return this.prisma.employeeDocument.findMany({
+      where: {
+        employeeId: employeeId,
+        deletedAt: null,
+      },
+      include: {
+        documentType: true,
+      },
+    });
+}
+
+
 }
