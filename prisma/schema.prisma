@@ -8,25 +8,55 @@ datasource db {
 }
 
 model Employee {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String
-  email     String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String
+  email             String             @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  EmployeeDocuments EmployeeDocument[]
 
   @@index([deletedAt])
   @@map("employees")
 }
 
 model DocumentType {
-  id          String    @id @default(uuid()) @db.Uuid
-  name        String
-  description String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String
+  description       String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  EmployeeDocuments EmployeeDocument[]
 
   @@index([deletedAt])
   @@map("document_types")
+}
+
+enum EmployeeDocumentStatus {
+  PENDING
+  COMPLETED
+}
+
+model EmployeeDocument {
+  id String @id @default(uuid()) @db.Uuid
+
+  employeeId     String @db.Uuid
+  documentTypeId String @db.Uuid
+
+  status EmployeeDocumentStatus @default(PENDING)
+
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([employeeId, documentTypeId])
+  @@index([employeeId])
+  @@index([documentTypeId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("employee_documents")
 }
