@@ -48,6 +48,7 @@ model EmployeeDocument {
 
   employee     Employee     @relation(fields: [employeeId], references: [id])
   documentType DocumentType @relation(fields: [documentTypeId], references: [id])
+  document     Document?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -59,4 +60,44 @@ model EmployeeDocument {
   @@index([status])
   @@index([deletedAt])
   @@map("employee_documents")
+}
+
+enum DocumentVersionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Document {
+  id String @id @default(uuid()) @db.Uuid
+
+  employeeDocumentId String @unique @db.Uuid
+
+  employeeDocument EmployeeDocument @relation(fields: [employeeDocumentId], references: [id])
+
+  versions DocumentVersion[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([deletedAt])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id String @id @default(uuid()) @db.Uuid
+
+  documentId String   @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id])
+
+  version Int
+
+  status     DocumentVersionStatus @default(ACTIVE)
+  storageKey String
+
+  createdAt DateTime @default(now())
+
+  @@index([documentId])
+  @@index([status])
+  @@map("document_versions")
 }
