@@ -89,73 +89,50 @@ async findEmployeeDocuments(
     });
 }
 
-async findPending(  query: FindPendingDocumentsDto)
-{
-  const page = query.page
-  const limit = query.limit
-  const skip = (page - 1) * limit
-  
+async findPending(query: FindPendingDocumentsDto): Promise<{
+  data: any[];
+  meta: { page: number; limit: number; total: number; totalPages: number };
+}> {
+  const page = query.page || 1;
+  const limit = query.limit || 10;
+  const skip = (page - 1) * limit;
+
   const where: any = {
     status: 'PENDING',
     deletedAt: null,
-  }
+  };
 
-  if(query.employeeId){
+  if (query.employeeId) {
     where.employeeId = query.employeeId;
   }
-  if(query.documentTypeId){
+
+  if (query.documentTypeId) {
     where.documentTypeId = query.documentTypeId;
   }
 
-const data =
-await this.prisma.employeeDocument.findMany({
-
+  const data = await this.prisma.employeeDocument.findMany({
     where,
-
     skip,
-
     take: limit,
-
-    include:{
-
-        employee:true,
-
-        documentType:true,
-
+    include: {
+      employee: true,
+      documentType: true,
     },
+  });
 
-});
-
-console.log(data, 'Rhenan')
-  
-  const total =
-await this.prisma.employeeDocument.count({
-
+  const total = await this.prisma.employeeDocument.count({
     where,
+  });
 
-});
-
-return{
-
+  return {
     data,
-
-    meta:{
-
-        page,
-
-        limit,
-
-        total,
-
-        totalPages:Math.ceil(total/limit),
-
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
-
-};
-
-
-  
-  
+  };
 }
 
 
