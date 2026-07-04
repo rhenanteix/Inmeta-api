@@ -188,6 +188,82 @@ mostPendingDocuments.sort(
 );
 return mostPendingDocuments;
     }
+    async latestSubmissions() {
+        const latestSubmissions =
+        await this.prisma.documentVersion.findMany({
+
+            take:10,
+
+            orderBy:{
+
+                createdAt:'desc',
+
+            },
+
+            include:{
+
+                document:{
+
+                    include:{
+
+                        employeeDocument:{
+
+                            include:{
+
+                                employee:true,
+
+                                documentType:true,
+
+                            },
+
+                        },
+
+                    },
+
+                },
+
+            },
+
+        });
+        const latest =
+        latestSubmissions.map(item=>({
+
+            employee:
+
+        item.document.employeeDocument.employee.name,
+
+            documentType:
+
+        item.document.employeeDocument.documentType.name,
+
+            version:item.version,
+
+            sentAt:item.createdAt,
+
+        }));
+        return latest;
+    }
+    async completion() {
+    const totalDocuments =
+    await this.prisma.employeeDocument.count()
+    const completeDocuments =
+    await this.prisma.employeeDocument.count({
+
+        where:{
+
+            status:"COMPLETED",
+
+        },
+
+    })
+    
+    const documentationCompletion =
+    totalDocuments === 0 ? 0 : Number(((completeDocuments/totalDocuments)*100).toFixed(2));
+    
+    return documentationCompletion;
+
+    }
+        
     
 
 }

@@ -11,11 +11,19 @@ export class DashboardController {
         return this.dashboardService.statistics()
     }
 
-  @Get('pending')
-pending() {
-    return this.dashboardService.getMostPending();
+    @Get('completion')
+    completion(){
+        return this.dashboardService.completion()
+    }
 
-    
-}
+    @Get('pending')
+    pending() {
+        return this.dashboardService.getMostPending();    
+    }
+
+    @Get('latest-submissions')
+    latestSubmissions() {
+        return this.dashboardService.latestSubmissions();    
+        }
     
 }
