@@ -7,9 +7,10 @@ import { DocumentTypeModule } from './modules/document-type/document-type.module
 import { EmployeeDocumentModule } from './modules/employee-document/employee-document.module';
 import { DocumentModule } from './modules/document/document.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
-  imports: [PrismaModule, EmployeeModule, DocumentTypeModule, EmployeeDocumentModule, DocumentModule, DashboardModule],
+  imports: [PrismaModule, EmployeeModule, DocumentTypeModule, EmployeeDocumentModule, DocumentModule, DashboardModule, HealthModule],
   controllers: [AppController],
   providers: [AppService],
 })
