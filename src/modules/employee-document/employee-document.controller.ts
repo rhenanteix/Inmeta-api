@@ -1,6 +1,7 @@
-import { Controller, Body, Param, Post, Delete, Get  } from '@nestjs/common';
+import { Controller, Body, Param, Post, Delete, Get, Query  } from '@nestjs/common';
 import { LinkDocumentTypeDto } from './dto/link-document-type.dto';
 import { EmployeeDocumentService } from './employee-document.service';
+import { FindPendingDocumentsDto } from './dto/find-pending-documents.dto';
 
 @Controller('employee-document')
 export class EmployeeDocumentController {
@@ -24,5 +25,10 @@ export class EmployeeDocumentController {
         @Param('id') id: string,
     ) {
         return this.employeeDocumentService.findEmployeeDocuments(id);
+    }
+
+    @Get('pending')
+    async findPending(@Query() query: FindPendingDocumentsDto) {
+        return this.employeeDocumentService.findPending(query);
     }
 }

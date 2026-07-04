@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma/prisma.service';
 import { LinkDocumentTypeDto } from './dto/link-document-type.dto';
+import { FindPendingDocumentsDto } from './dto/find-pending-documents.dto';
 
 @Injectable()
 export class EmployeeDocumentService {
@@ -86,6 +87,75 @@ async findEmployeeDocuments(
         documentType: true,
       },
     });
+}
+
+async findPending(  query: FindPendingDocumentsDto)
+{
+  const page = query.page
+  const limit = query.limit
+  const skip = (page - 1) * limit
+  
+  const where: any = {
+    status: 'PENDING',
+    deletedAt: null,
+  }
+
+  if(query.employeeId){
+    where.employeeId = query.employeeId;
+  }
+  if(query.documentTypeId){
+    where.documentTypeId = query.documentTypeId;
+  }
+
+const data =
+await this.prisma.employeeDocument.findMany({
+
+    where,
+
+    skip,
+
+    take: limit,
+
+    include:{
+
+        employee:true,
+
+        documentType:true,
+
+    },
+
+});
+
+console.log(data, 'Rhenan')
+  
+  const total =
+await this.prisma.employeeDocument.count({
+
+    where,
+
+});
+
+return{
+
+    data,
+
+    meta:{
+
+        page,
+
+        limit,
+
+        total,
+
+        totalPages:Math.ceil(total/limit),
+
+    },
+
+};
+
+
+  
+  
 }
 
 
