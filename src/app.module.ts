@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './common/database/prisma/prisma.module';
@@ -10,7 +11,36 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './modules/health/health.module';
 
 @Module({
-  imports: [PrismaModule, EmployeeModule, DocumentTypeModule, EmployeeDocumentModule, DocumentModule, DashboardModule, HealthModule],
+  imports: [
+    PrismaModule, 
+    EmployeeModule, 
+    DocumentTypeModule, 
+    EmployeeDocumentModule, 
+    DocumentModule, 
+    DashboardModule, 
+    HealthModule,
+    LoggerModule.forRoot({
+
+    pinoHttp:{
+
+        transport:
+
+        process.env.NODE_ENV !== 'production'
+
+        ?{
+            target:'pino-pretty',
+
+            options:{
+
+                singleLine:true,
+            },
+
+        }
+        :undefined,
+    },
+
+}),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
