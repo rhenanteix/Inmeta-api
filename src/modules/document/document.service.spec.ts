@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-
 import { DocumentService } from './document.service';
 import { PrismaService } from '../../common/database/prisma/prisma.service';
 
@@ -12,11 +11,9 @@ describe('DocumentService', () => {
       findFirst: jest.fn(),
       update: jest.fn(),
     },
-
     document: {
       create: jest.fn(),
     },
-
     documentVersion: {
       findFirst: jest.fn(),
       updateMany: jest.fn(),
@@ -30,99 +27,133 @@ describe('DocumentService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prismaMock.$transaction.mockImplementation(async (cb:any)=>cb(tx));
 
-    prismaMock.$transaction.mockImplementation(
-      async (callback: any) => callback(tx),
-    );
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        DocumentService,
+        { provide: PrismaService, useValue: prismaMock },
+      ],
+    }).compile();
 
-    const module: TestingModule =
-      await Test.createTestingModule({
-        providers: [
-          DocumentService,
-          {
-            provide: PrismaService,
-            useValue: prismaMock,
-          },
-        ],
-      }).compile();
-
-    service = module.get<DocumentService>(DocumentService);
+    service = module.get(DocumentService);
   });
 
   describe('sendDocument', () => {
-    it('should be defined', () => {
-      expect(service).toBeDefined();
-    });
-
-    it('should throw NotFoundException when employee document does not exist', async () => {
+    it('should throw when employee document is not found', async () => {
       tx.employeeDocument.findFirst.mockResolvedValue(null);
 
       await expect(
         service.sendDocument({
-          employeeDocumentId: 'uuid',
-          storageKey: 'cpf.pdf',
+          employeeDocumentId: 'emp-doc',
+          storageKey: 'file.pdf',
         }),
       ).rejects.toThrow(NotFoundException);
-
-      expect(
-        tx.employeeDocument.findFirst,
-      ).toHaveBeenCalled();
     });
 
-    it('should create first document version', async () => {
+    it('should create first document/version', async () => {
       tx.employeeDocument.findFirst.mockResolvedValue({
-        id: 'employee-document-id',
+        id: 'emp-doc',
         document: null,
       });
 
       tx.document.create.mockResolvedValue({
-        id: 'document-id',
+        id: 'doc-1',
       });
 
       tx.documentVersion.findFirst.mockResolvedValue(null);
-
-      tx.documentVersion.updateMany.mockResolvedValue({
-        count: 0,
-      });
+      tx.documentVersion.updateMany.mockResolvedValue({ count: 0 });
 
       tx.documentVersion.create.mockResolvedValue({
-        id: 'version-id',
+        id: 'v1',
         version: 1,
         status: 'ACTIVE',
       });
 
       tx.employeeDocument.update.mockResolvedValue({
-        id: 'employee-document-id',
+        id: 'emp-doc',
         status: 'COMPLETED',
       });
 
       const result = await service.sendDocument({
-        employeeDocumentId: 'employee-document-id',
+        employeeDocumentId: 'emp-doc',
         storageKey: 'cpf.pdf',
       });
 
-      expect(result.message).toEqual(
-        'Document sent successfully.',
-      );
-
-      expect(result.version.version).toBe(1);
-
       expect(tx.document.create).toHaveBeenCalledWith({
         data: {
-          employeeDocumentId: 'employee-document-id',
+          employeeDocumentId: 'emp-doc',
         },
       });
 
-      expect(
-        tx.documentVersion.create,
-      ).toHaveBeenCalledWith({
+      expect(tx.documentVersion.create).toHaveBeenCalledWith({
         data: {
-          documentId: 'document-id',
+          documentId: 'doc-1',
           version: 1,
           storageKey: 'cpf.pdf',
           status: 'ACTIVE',
         },
       });
+
+      expect(result.message).toBe('Document sent successfully.');
+      expect(result.version.version).toBe(1);
+    });
+
+    it('should create next version when document exists', async () => {
+      tx.employeeDocument.findFirst.mockResolvedValue({
+        id: 'emp-doc',
+        document: {
+          id: 'doc-1',
+        },
+      });
+
+      tx.documentVersion.findFirst.mockResolvedValue({
+        version: 2,
+      });
+
+      tx.documentVersion.updateMany.mockResolvedValue({ count: 1 });
+
+      tx.documentVersion.create.mockResolvedValue({
+        id: 'v3',
+        version: 3,
+      });
+
+      tx.employeeDocument.update.mockResolvedValue({
+        id: 'emp-doc',
+      });
+
+      const result = await service.sendDocument({
+        employeeDocumentId: 'emp-doc',
+        storageKey: 'novo.pdf',
+      });
+
+      expect(tx.document.create).not.toHaveBeenCalled();
+
+      expect(tx.documentVersion.updateMany).toHaveBeenCalledWith({
+        where: {
+          documentId: 'doc-1',
+          status: 'ACTIVE',
+        },
+        data: {
+          status: 'INACTIVE',
+        },
+      });
+
+      expect(tx.documentVersion.create).toHaveBeenCalledWith({
+        data: {
+          documentId: 'doc-1',
+          version: 3,
+          storageKey: 'novo.pdf',
+          status: 'ACTIVE',
+        },
+      });
+
+      expect(tx.employeeDocument.update).toHaveBeenCalledWith({
+        where: { id: 'emp-doc' },
+        data: { status: 'COMPLETED' },
+      });
+
+      expect(result.version.version).toBe(3);
     });
   });
 });
